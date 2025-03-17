@@ -10,7 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define MAX_MSG_LEN 4096
+#define MAX_MSG_LEN 1024*1024*10 //10MB
 #define SERVER_PORT 45455
 #define SERVER_IP "127.0.0.1"
 #define MAX_CONNECTION 1
@@ -43,7 +43,60 @@ uint32_t crc32(const char *s, size_t n) {
 }
 
 int reciveFile() {
+	struct sockaddr_in server = {
+		.sin_family = AF_INET,
+		.sin_port = htons( SERVER_PORT )
+	};
+	if( inet_pton( AF_INET, ip, & server.sin_addr ) <= 0 ) {
+		perror( "inet_pton() ERROR" );
+		exit( 1 );
+	}
+	const int socket_ = socket( AF_INET, SOCK_STREAM, 0 );
+	if( socket_ < 0 ) {
+		perror( "socket() ERROR" );
+		exit( 2 );
+	} 
+	socklen_t len = sizeof( server );
+	if( bind( socket_,( struct sockaddr * ) & server, len ) < 0 ) {
+		perror( "bind() ERROR" );
+		exit( 3 );
+	}
+	if( listen( socket_, MAX_CONNECTION ) < 0 ) {
+		perror( "listen() ERROR" );
+		exit( 4 );
+	}
+	printf( "Connecting...\n" );
 
+        struct sockaddr_in client = { };
+
+        const int clientSocket = accept( socket_,( struct sockaddr * ) & client, & len );
+        if( clientSocket < 0 )
+        {
+            perror( "accept() ERROR" );
+	    //continue;
+        }
+        char buffer[ MAX_MSG_LEN ] = { };
+	char filename[255] = { };
+	recv(clientSocket, filename, sizeof(filename), 0);
+	FILE *file = NULL;
+	file = fopen(filename, "wb");
+	if(file != NULL){
+		uint64_t blockSize = 0;
+		recv(clientSocket, &blockSize, 8, 0);
+		printf("Reciving block of %iB in size.\n", blockSize);
+		recv(clientSocket, buffer, blockSize+4, 0);
+
+		char recived_status = 0;
+		if(crc32(buffer,blockSize+4)==0){
+			printf("Block recived correctly.\n");
+			fwrite(&buffer,blockSize,1,file);
+			recived_status = 'K';
+		} else {
+			printf("Block CRC error\n");
+			recived_status='E';
+		}
+		send(clientSocket, &recived_status, 1, 0)<=0;
+	}
 }
 
 //function to read file in block and send these blocks
@@ -81,6 +134,8 @@ int sendFile(char *path){
 			perror("accept() ERROR");
 		}
 
+		char filename[255] = { };
+
 		char inBuffer[256] = {};
 
 		FILE *file = NULL;
@@ -88,20 +143,22 @@ int sendFile(char *path){
 		size_t bytesRead = 0;
 	
 		file = fopen(path, "rb");
-	
+		memcpy(filename, path, sizeof(path));
+
 		if(file != NULL) {
+			send(clientSocket, filename, 255, 0);
 			while((bytesRead = fread(buffer, 1, sizeof(buffer), file)) > 0){
 				//process buffer
 				//temporary
 				printf("------BLOCK-INFO-------------------\n");
 				printf("bytesRead=%i\n",bytesRead);
-				printf("------BEGIN-BLOCK------------------\n");
+				/*printf("------BEGIN-BLOCK------------------\n");
 				for(int i=0;i<bytesRead;i++){
 					printf("%02x",buffer[i]);
-				}
+				}*/
 				printf("\n------CRC-CHECKSUM-----------------\n");
 				printf("%x\n",crc32(buffer,bytesRead));
-				printf("------END--------------------------\n\n");
+				printf("------END-BLOCK--------------------\n\n");
 
 				//send block of data
 				while(1){
@@ -114,9 +171,13 @@ int sendFile(char *path){
 					send(clientSocket, buffer, bytesRead, 0) <= 0;
 					//crc checksum
 					uint32_t crc_sum_int =  crc32(buffer,bytesRead);
-					unsigned char crc_sum[sizeof(crc_sum_int)];
-					memcpy(crc_sum,&crc_sum_int,sizeof(crc_sum_int));
-					send(clientSocket, crc_sum, sizeof(crc_sum), 0) <=0;
+					//unsigned char crc_sum[sizeof(crc_sum_int)];
+					//memcpy(crc_sum,&crc_sum_int,sizeof(crc_sum_int));
+					unsigned char crc_sum_fixed = ((crc_sum_int>>24)&0xff) | // move byte 3 to byte 0
+					        ((crc_sum_int<<8)&0xff0000) | // move byte 1 to byte 2
+                    				((crc_sum_int>>8)&0xff00) | // move byte 2 to byte 1
+                    				((crc_sum_int<<24)&0xff000000); // byte 0 to byte 3
+					send(clientSocket, &crc_sum_fixed, sizeof(crc_sum_fixed), 0) <=0;
 					
 					//wait for response
 					char recived_msg = 0;
@@ -144,6 +205,8 @@ static int parse_options(int key, char *arg, struct argp_state *state) {
 	switch(key) {
 		case 'i':
 			//ip = arg
+			strcpy(ip, arg);
+			printf("IP set to %s\nIP variable is %s\n",arg,ip);
 			break;
 		/*case 'u':
 			//encypt = no
@@ -201,6 +264,8 @@ int main(int argc, char **argv) {
 		}
 	} else if(ACTION_RECIVE & action) {
 		printf("Reciving file\n");
+		printf("from IP: %s \n",ip);
+		reciveFile();
 	} else {
 		printf("ERROR: Action not specified, or multiple actions specified.\n");
 		return -1;

@@ -4,3 +4,4 @@
 char action = 0;
 int maxBlockSize = 1024*1024; //1MB
 char *filepath = 0;
+char ip[16] = { };
