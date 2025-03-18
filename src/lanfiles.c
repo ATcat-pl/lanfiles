@@ -96,7 +96,7 @@ void reciveFile(void) {
 	//recive filename
 	char filename[256] = { };
 	recv(clientSocket, filename, sizeof(filename), 0);
-	printf("Reciving file: %s\n",filename);
+	printf("Reciving file: \x1b[3m%s\x1b[23m\n",filename);
 
 	//recive max block size
 	uint32_t maxBlockSize = 0;
@@ -109,25 +109,35 @@ void reciveFile(void) {
 	file = fopen(filename, "wb");
 	if(file != NULL){
 		while(1){
+			//block number
+			uint32_t blockNumber = 0;
+			recv(clientSocket, &blockNumber, 4, 0);
+
+			//block size
 			uint64_t blockSize = 0;
 			recv(clientSocket, &blockSize, 4, 0);
 			if(blockSize==0){
 				break;
 			}
-			printf("Reciving block of %iB in size.\n", blockSize);
+//			printf("Reciving block %i - %iB : ", blockNumber, blockSize);
+
+			//data
 			recv(clientSocket, buffer, blockSize, 0);
-			printf("Reciving block CRC\n");
+
+			//crc
 			uint32_t crc = 0;
 			recv(clientSocket, &crc, 4, 0);
 
 			char recived_status = 0;
 			uint32_t crcComputed = crc32(buffer,blockSize);
 			if(crc==crcComputed){
-				printf("Block recived correctly.\n");
-				fwrite(&buffer,blockSize,1,file);
+				printf("Reciving block %i - %iB : \x1b[32mOK\x1b[0m\n", blockNumber, blockSize);
+				for(int i = 0; i<blockSize; i++){
+					fwrite(&buffer[i],1,1,file);
+				}
 				recived_status = 'K';
 			} else {
-				printf("Block CRC error\n");
+				printf("Reciving block %i - %iB : \x1b[31mCRC error\x1b[0m\n");
 				recived_status='E';
 			}
 			send(clientSocket, &recived_status, 1, 0)<=0;
@@ -188,11 +198,14 @@ int sendFile(char *path){
 
 		//send maxBlockSize
 		send(clientSocket, &maxBlockSize, sizeof(maxBlockSize), 0) <= 0;
+		
+		//block counter
+		uint32_t blockNumber = 0;
 
 		while((bytesRead = fread(buffer, 1, sizeof(buffer), file)) > 0){
-			//process buffer
-			//temporary
-			printf("------BLOCK-INFO-------------------\n");
+
+						//temporary
+			/*printf("------BLOCK-INFO-------------------\n");
 			printf("bytesRead=%i\n",bytesRead);
 			printf("------BEGIN-BLOCK------------------\n");
 			  for(int i=0;i<bytesRead;i++){
@@ -200,39 +213,33 @@ int sendFile(char *path){
 			  }
 			printf("\n------CRC-CHECKSUM-----------------\n");
 			printf("%x\n",crc32(buffer,bytesRead));
-			printf("------END-BLOCK--------------------\n\n");
+			printf("------END-BLOCK--------------------\n\n");*/
 
+//			printf("Sending block %i - %iB : ", blockNumber, bytesRead);
 			//send block of data
 			while(1){
-				//block size (32 bits)
-				//uint32_t bytes = bytesRead;
-				//unsigned char bytesB[sizeof(bytes)];
-				//memcpy(bytesB,&bytes,sizeof(bytes));
+				//block number
+				send(clientSocket, &blockNumber, sizeof(bytesRead), 0)<=0;
+				//block size
 				send(clientSocket, &bytesRead, sizeof(bytesRead), 0) <= 0;
 				//data itself
 				send(clientSocket, buffer, bytesRead, 0) <= 0;
 				//crc checksum
 				uint32_t crc_sum_int =  crc32(buffer,bytesRead);
-				//unsigned char crc_sum[sizeof(crc_sum_int)];
-				//memcpy(crc_sum,&crc_sum_int,sizeof(crc_sum_int));
-				/*unsigned char crc_sum_fixed = ((crc_sum_int>>24)&0xff) | // move byte 3 to byte 0
-					((crc_sum_int<<8)&0xff0000) | // move byte 1 to byte 2
-					((crc_sum_int>>8)&0xff00) | // move byte 2 to byte 1
-					((crc_sum_int<<24)&0xff000000); // byte 0 to byte 3
-				send(clientSocket, &crc_sum_fixed, sizeof(crc_sum_fixed), 0) <=0;*/
 				send(clientSocket, &crc_sum_int, sizeof(crc_sum_int), 0)<=0;
 
 				//wait for response
 				char recived_msg = 0;
 				recv(clientSocket, &recived_msg, 1, 0) <=0;
-				printf("%02x", recived_msg);
-				if(recived_msg=='K'){
-					printf("Block OK.\n");
+				if(recived_msg=='K'){//client says block recived correctly
+					printf("Sending block %i - %iB : \x1b[32mOK\x1b[0m\n", blockNumber, bytesRead);
 					break;
 				} else {
-					printf("Error, retransmitting.\n");
+					//client said something else, retransmit
+					printf("Sending block %i - %iB : \x1b[40C\x1b[31mERROR\x1b[0m, retransmitting.\n", blockNumber, bytesRead);
 				}
 			}
+			blockNumber++;
 
 		}
 		fclose(file);
@@ -299,7 +306,7 @@ int main(int argc, char **argv) {
 	decode_options(argc, argv);
 	if(ACTION_SEND & action){
 		if(filepath == NULL){
-			printf("ERROR: File must be specified when sending.");
+			printf("\x1b[31mERROR\x1b[0m: File must be specified when sending.");
 			return -1;
 		} else {
 			printf("Sending file\nFilePath = %s\nMaxBlockSize = %iB\n", filepath, maxBlockSize);
