@@ -1,5 +1,5 @@
 pkgname="LANfiles"
-pkgver="0.0.1-alpha1"
+pkgver="0.0.1"
 pkgrel="1"
 pkgdesc="Simple program to send files over TCP"
 arch=('i686' 'pentium4' 'x86_64' 'arm' 'armv7h' 'armv6h' 'aarch64')
