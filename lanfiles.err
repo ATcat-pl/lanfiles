@@ -1,0 +1,27 @@
+src/lanfiles.h(8): Error! E1112: Initializer list cannot be empty
+src/lanfiles.c(2): Error! E1055: Unable to open 'argp.h'
+src/lanfiles.c(8): Error! E1055: Unable to open 'sys/socket.h'
+src/lanfiles.c(10): Error! E1055: Unable to open 'netinet/in.h'
+src/lanfiles.c(11): Error! E1055: Unable to open 'arpa/inet.h'
+src/lanfiles.c(24): Error! E1058: Cannot use typedef 'uint32_t' as a variable
+src/lanfiles.c(24): Error! E1009: Expecting ';' but found 'i'
+src/lanfiles.c(24): Error! E1011: Symbol 'i' has not been declared
+src/lanfiles.c(24): Warning! W111: Meaningless use of an expression
+src/lanfiles.c(24): Error! E1009: Expecting ')' but found ';'
+src/lanfiles.c(24): Error! E1009: Expecting ';' but found ')'
+src/lanfiles.c(24): Error! E1063: Missing operand
+src/lanfiles.c(24): Warning! W111: Meaningless use of an expression
+src/lanfiles.c(24): Error! E1009: Expecting ';' but found ')'
+src/lanfiles.c(24): Error! E1063: Missing operand
+src/lanfiles.c(24): Warning! W111: Meaningless use of an expression
+src/lanfiles.c(24): Error! E1009: Expecting ';' but found ')'
+src/lanfiles.c(24): Error! E1063: Missing operand
+src/lanfiles.c(24): Warning! W111: Meaningless use of an expression
+src/lanfiles.c(24): Error! E1009: Expecting ';' but found ')'
+src/lanfiles.c(24): Error! E1063: Missing operand
+src/lanfiles.c(24): Warning! W111: Meaningless use of an expression
+src/lanfiles.c(24): Error! E1009: Expecting ';' but found ')'
+src/lanfiles.c(24): Error! E1063: Missing operand
+src/lanfiles.c(24): Warning! W111: Meaningless use of an expression
+src/lanfiles.c(24): Error! E1009: Expecting ';' but found ')'
+src/lanfiles.c(24): Error! E1147: Too many errors: compilation aborted

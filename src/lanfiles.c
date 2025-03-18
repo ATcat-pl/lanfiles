@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <libgen.h>
+#include <string.h>
 
 #define MAX_MSG_LEN 1024*1024*10 //10MB
 #define SERVER_PORT 45455
@@ -149,6 +151,7 @@ void reciveFile(void) {
 //function to read file in block and send these blocks
 int sendFile(char *path){
 	//set up tcp server
+	
 	struct sockaddr_in server = {
 		.sin_family = AF_INET,
 		.sin_port = htons( SERVER_PORT )
@@ -190,7 +193,8 @@ int sendFile(char *path){
 	/*size_t*/uint32_t bytesRead = 0;
 
 	file = fopen(path, "rb");
-	memcpy(filename, path, sizeof(path));
+	//memcpy(filename, path, sizeof(path));
+	strcpy(filename,basename(path));
 
 	if(file != NULL) {
 		//send filename
