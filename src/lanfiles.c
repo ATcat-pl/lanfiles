@@ -45,7 +45,7 @@ uint32_t crc32(const char *s, size_t n) {
 	return ~crc;
 }
 
-void reciveFile(void) {
+int reciveFile(void) {
 	/*struct sockaddr_in server = {
 	  .sin_family = AF_INET,
 	  .sin_port = htons( SERVER_PORT )
@@ -74,14 +74,15 @@ void reciveFile(void) {
 		.sin_port = htons(45455)
 	};
 
-	uint32_t ipAddr = 0;
-
-	inet_pton(AF_INET, ip, &ipAddr);	
+	if(inet_pton(AF_INET, ip, &server.sin_addr)<=0){
+		printf("[31mERROR[0m");
+		return -1;
+	}
 	const int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
 	printf("Connecting...\n");
 	if(connect(clientSocket,(struct sockaddr *) & server, sizeof(server))){
 		perror("ERROR: ");
-		exit(-2);
+		return -2;
 	} else {
 		printf("Connected\n");
 	}
@@ -319,7 +320,7 @@ int main(int argc, char **argv) {
 	} else if(ACTION_RECIVE & action) {
 		printf("Reciving file\n");
 		printf("from IP: %s \n",ip);
-		reciveFile();
+		return reciveFile();
 	} else {
 		printf("ERROR: Action not specified, or multiple actions specified.\n");
 		return -1;
