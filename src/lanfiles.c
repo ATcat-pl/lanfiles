@@ -155,12 +155,14 @@ int sendFile(char *path){
 	
 	struct sockaddr_in server = {
 		.sin_family = AF_INET,
-		.sin_port = htons( SERVER_PORT )
+		.sin_port = htons( SERVER_PORT ),
+		.sin_addr.s_addr = INADDR_ANY
 	};
-	if( inet_pton( AF_INET, SERVER_IP, & server.sin_addr ) <= 0 ) {
+
+	/*if( inet_pton( AF_INET, SERVER_IP, & server.sin_addr ) <= 0 ) {
 		perror( "inet_pton() ERROR" );
 		exit( 1 );
-	}
+	}*/
 	const int socket_ = socket( AF_INET, SOCK_STREAM, 0 );
 	if( socket_ < 0 ) {
 		perror( "socket() ERROR" );
